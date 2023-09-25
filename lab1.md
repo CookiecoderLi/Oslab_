@@ -29,10 +29,10 @@ tail kern_init
 
 ### 1.实现目标
 
-* 对时钟中断进行处理的部分填写kern/trap/trap.c函数中处理时钟中断的部分，使操作系统每遇到100次时钟中断后，调用print_ticks子程序，向屏幕上打印一行文字”100 ticks”，在打印完10行后调用sbi.h中的shut_down()函数关机。
+对时钟中断进行处理的部分填写kern/trap/trap.c函数中处理时钟中断的部分，使操作系统每遇到100次时钟中断后，调用print_ticks子程序，向屏幕上打印一行文字”100 ticks”，在打印完10行后调用sbi.h中的shut_down()函数关机。
   
-## 2.实现过程
-### 实现准备
+### 2.实现过程
+#### 实现准备
 + trap.c文件中定义好了一个print_ticks函数，用来向屏幕上面打印一行文字"100 ticks"。
   ```
   static void print_ticks() {
@@ -62,7 +62,7 @@ tail kern_init
   + get_cycles()是在clock.c中定义的一个函数，里面利用rdtime的伪指令读取了CPU启动之后经过的真实时间，因为无论在RISCV32还是RISCV64架构中，time寄存器都是64为，所以对于64位架构，只需要调用一次rdtime，但对于32位架构，就要把64的time寄存器读到两个32位的整数里，然后拼凑出来形成64位。
   + timebase是定义好的静态变量，其值为100000。
 + sbi.c文件中定义了sbi_shutdown函数，用来进行关机。
-### 实现逻辑
+#### 实现逻辑
 + clock.c文件的初始化函数中已经调用了一次clock_set_next_event函数，它就会跳转到时钟中断处理的代码处，但之后每次如果要发生时钟中断，还需要再次调用。所以我们首先再次调用clock_set_next_event函数。
   ```
   clock_set_next_event();
