@@ -129,8 +129,6 @@ Breakpoint 1, kern_entry () at kern/init/entry.S:7
 正如上述`0x80200000`是`kernel.ld`中定义的`BASE_ADDRESS`（加载地址）所决定的，同时在kernel.ld中也定义了入口点为kern_entry,查看entry.S相应代码为
 
 
-
-
         .section .text,"ax",%progbits
         .globl kern_entry
     kern_entry:
@@ -232,5 +230,3 @@ End of assembler dump.
 
 
 # 三、知识点
-
-
