@@ -145,7 +145,7 @@ __trapret:
    2. **`csrrw s0, sscratch, x0`**:
       `csrrw` 是 "Control and Status Register Read-Write" 的缩写，它读取一个 CSR 的值并将其写入一个寄存器，同时将另一个寄存器的值写入该 CSR。
       这条指令做了以下操作：
-      将 `sscratch` CSR 的值读取到 `s0` 寄存器。
+      将 `sscratch` CSR 的值读取到 `s0` 寄存器。RISCV不能直接从CSR写到内存，需要csrr把CSR读取到通用寄存器，再从通用寄存器store到内存。
       将 `x0` 寄存器的值（这是一个固定的零寄存器，总是为 0）写入 `sscratch` CSR。
    
    这两条指令的组合实现了以下操作：
@@ -183,12 +183,10 @@ void exception_handler(struct trapframe *tf) {
             //断点异常处理
             /* LAB1 CHALLLENGE3   YOUR CODE : 2110508 */
             //(1)输出指令异常类型（ breakpoint）
-            	  cprintf("Exception type:breakpoint\n");
+                  cprintf("Exception type:breakpoint\n");
             //(2)输出异常指令地址
-             	  cprintf("ebreak caught at 0x%08x\n",tf->badvaddr);
+                   cprintf("ebreak caught at 0x%08x\n",tf->badvaddr);
             //(3)更新 tf->epc寄存器
-            	  tf->epc=tf->epc+4;
+                  tf->epc=tf->epc+4;
             break;
 ```
-
-
