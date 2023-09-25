@@ -127,8 +127,6 @@ Breakpoint 1, kern_entry () at kern/init/entry.S:7
 ```
 
 正如上述`0x80200000`是`kernel.ld`中定义的`BASE_ADDRESS`（加载地址）所决定的，同时在kernel.ld中也定义了入口点为kern_entry,查看entry.S相应代码为
-
-
         .section .text,"ax",%progbits
         .globl kern_entry
     kern_entry:
@@ -230,3 +228,26 @@ End of assembler dump.
 
 
 # 三、知识点
+
+## make和makefile
+
+make工具可以依照Makefile文件中的内容自动编译和链接程序，基本规则为
+
+```
+target ... ： prerequisites
+   comand
+   ...
+   ...
+```
+
+target也就是一个目标文件，可以是object file，也可以是执行文件。还可以是一个标签（label）。prerequisites就是，要生成那个target所需要的文件或是目标。command也就是make需要执行的命令（任意的shell命令）。 这是一个文件的依赖关系，也就是说，target这一个或多个的目标文件依赖于prerequisites中的文件，其生成规则定义在 command中。如果prerequisites中有一个以上的文件比target文件要新，那么command所定义的命令就会被执行。
+
+## bootloader
+
+负责负责初始化硬件并把操作系统加载到内存里，这里我们用的QEMU 自带的 bootloader: OpenSBI 固件，OpenSBI 将找到操作系统内核的存储位置，并将其加入内存，将PC指向内核的初始化部分，执行操作系统源代码。
+
+本次实验中，作为 bootloader 的 OpenSBI.bin 被加载到物理内存以物理地址 0x80000000 开头的区域上，同时内核镜像 os.bin 被加载到以物理地址 0x80200000 开头的区域上。
+
+## 复位地址
+
+指的是 CPU 在上电的时候，或者按下复位键的时候，PC 被赋的初始值。本实验中，QEMU 模拟的riscv 处理器复位地址为`0x1000`（我们也在程序开始十条汇编指令处验证了这个地址），处理器将从此处开始执行复位代码，将会初始化CPU、内存和外设，之后启动boostloader，加载操作系统内核并将控制权交给操作系统。
