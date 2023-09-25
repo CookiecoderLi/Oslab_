@@ -83,7 +83,7 @@ tail kern_init
   ```
 
 ### 3.实现结果
-
-  执行<strong>make qemu</strong>后，发现屏幕上打印了10条"100 ticks"，然后退出了qemu。![实例图片](/C:\Users\lixiang\Desktop\labcode\lab1\challenge3/图片/效果图.png)
-  执行<strong>make grade</strong>后，可以看到得分为100，满足实验要求！
+执行<strong>make qemu</strong>后，发现屏幕上打印了10条"100 ticks"，然后退出了qemu。
+![实例图片](https://github.com/CookiecoderLi/Oslab_/blob/master/%E6%95%88%E6%9E%9C%E5%9B%BE.png)  
+执行<strong>make grade</strong>后，可以看到得分为100，满足实验要求！
 ![实例图片](https://github.com/CookiecoderLi/Oslab_/blob/master/grade.png)
