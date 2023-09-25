@@ -6,6 +6,7 @@
 
 volatile size_t ticks;
 
+
 static inline uint64_t get_cycles(void) {
 #if __riscv_xlen == 64
     uint64_t n;
@@ -42,6 +43,7 @@ void clock_init(void) {
 
     // initialize time counter 'ticks' to zero
     ticks = 0;
+
 
     cprintf("++ setup timer interrupts\n");
 }

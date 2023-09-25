@@ -21,12 +21,15 @@ int kern_init(void) {
 
     const char *message = "(THU.CST) os is loading ...\n";
     cprintf("%s\n\n", message);
-
     print_kerninfo();
 
     // grade_backtrace();
-
+    
     idt_init();  // init interrupt descriptor table
+
+//check the interrupt
+    //asm("mret");
+    //asm("ebreak");
 
     // rdtime in mbare mode crashes
     clock_init();  // init clock interrupt
