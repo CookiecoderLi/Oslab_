@@ -13,6 +13,7 @@
 #include <sbi.h>
 
 #define TICK_NUM 100
+volatile size_t num = 0;
 
 static void print_ticks() {
     cprintf("%d ticks\n", TICK_NUM);
@@ -150,6 +151,11 @@ void interrupt_handler(struct trapframe *tf) {
             clock_set_next_event();
             if (++ticks % TICK_NUM == 0) {
                 print_ticks();
+                if (num == 10)
+                {
+                    sbi_shutdown();
+                }
+                num++;
             }
             break;
         case IRQ_H_TIMER:
@@ -224,7 +230,7 @@ void exception_handler(struct trapframe *tf) {
         case CAUSE_MACHINE_ECALL:
             cprintf("Environment call from M-mode\n");
             break;
-        case CAUSE_FETCH_PAGE_FAULT:
+        case CAUSE_FETCH_PAGE_FAULT://取指令时发生的Page Fault先不处理
             cprintf("Instruction page fault\n");
             break;
         case CAUSE_LOAD_PAGE_FAULT:
@@ -236,7 +242,7 @@ void exception_handler(struct trapframe *tf) {
             break;
         case CAUSE_STORE_PAGE_FAULT:
             cprintf("Store/AMO page fault\n");
-            if ((ret = pgfault_handler(tf)) != 0) {
+            if ((ret = pgfault_handler(tf)) != 0) {//do_pgfault()页面置换成功时返回0
                 print_trapframe(tf);
                 panic("handle pgfault failed. %e\n", ret);
             }
@@ -246,6 +252,8 @@ void exception_handler(struct trapframe *tf) {
             break;
     }
 }
+//这里的异常处理程序会把Page Fault分发给kern / mm / vmm.c的do_pgfault()函数
+//并尝试进行页面置换
 
 /* *
  * trap - handles or dispatches an exception/interrupt. if and when trap()

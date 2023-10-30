@@ -56,12 +56,15 @@ struct Page *alloc_pages(size_t n) {
         local_intr_save(intr_flag);
         { page = pmm_manager->alloc_pages(n); }
         local_intr_restore(intr_flag);
+        //如果有足够的物理页面，就不必换出其他页面
+       //如果n>1, 说明希望分配多个连续的页面，但是我们换出页面的时候并不能换出连续的页面
+        //swap_init_ok标志是否成功初始化了
 
         if (page != NULL || n > 1 || swap_init_ok == 0) break;
 
         extern struct mm_struct *check_mm_struct;
         // cprintf("page %x, call swap_out in alloc_pages %d\n",page, n);
-        swap_out(check_mm_struct, n, 0);
+        swap_out(check_mm_struct, n, 0);//调用页面置换的”换出页面“接口。这里必有n=1
     }
     // cprintf("n %d,get page %x, No %d in alloc_pages\n",n,page,(page-pages));
     return page;
@@ -217,6 +220,7 @@ void pmm_init(void) {
 //  create: a logical value to decide if alloc a page for PT
 // return vaule: the kernel virtual address of this pte
 pte_t *get_pte(pde_t *pgdir, uintptr_t la, bool create) {
+    //寻找(有必要的时候分配)一个页表项
     /*
      *
      * If you need to visit a physical address, please use KADDR()
@@ -244,8 +248,8 @@ pte_t *get_pte(pde_t *pgdir, uintptr_t la, bool create) {
      *   PTE_U           0x004                   // page table/directory entry
      * flags bit : User can access
      */
-    pde_t *pdep1 = &pgdir[PDX1(la)];
-    if (!(*pdep1 & PTE_V)) {
+    pde_t *pdep1 = &pgdir[PDX1(la)];//找到对应的Giga Page
+    if (!(*pdep1 & PTE_V)) {//如果下一级页表不存在，那就给它分配一页，创造新页表
         struct Page *page;
         if (!create || (page = alloc_page()) == NULL) {
             return NULL;
@@ -253,9 +257,13 @@ pte_t *get_pte(pde_t *pgdir, uintptr_t la, bool create) {
         set_page_ref(page, 1);
         uintptr_t pa = page2pa(page);
         memset(KADDR(pa), 0, PGSIZE);
+        //我们现在在虚拟地址空间中，所以要转化为KADDR再memset.
+        //不管页表怎么构造，我们确保物理地址和虚拟地址的偏移量始终相同，
+        //那么就可以用这种方式完成对物理内存的访问。
         *pdep1 = pte_create(page2ppn(page), PTE_U | PTE_V);
     }
-    pde_t *pdep0 = &((pde_t *)KADDR(PDE_ADDR(*pdep1)))[PDX0(la)];
+    pde_t *pdep0 = &((pde_t *)KADDR(PDE_ADDR(*pdep1)))[PDX0(la)];//再下一级页表
+    //这里的逻辑和前面完全一致，页表不存在就现在分配一个
 //    pde_t *pdep0 = &((pde_t *)(PDE_ADDR(*pdep1)))[PDX0(la)];
     if (!(*pdep0 & PTE_V)) {
     	struct Page *page;
@@ -268,6 +276,7 @@ pte_t *get_pte(pde_t *pgdir, uintptr_t la, bool create) {
  //   	memset(pa, 0, PGSIZE);
     	*pdep0 = pte_create(page2ppn(page), PTE_U | PTE_V);
     }
+    //找到输入的虚拟地址la对应的页表项的地址(可能是刚刚分配的)
     return &((pte_t *)KADDR(PDE_ADDR(*pdep0)))[PTX(la)];
 }
 
@@ -287,6 +296,7 @@ struct Page *get_page(pde_t *pgdir, uintptr_t la, pte_t **ptep_store) {
 //                - and clean(invalidate) pte which is related linear address la
 // note: PT is changed, so the TLB need to be invalidate
 static inline void page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
+    //删除一个页表项以及它的映射
     /*
      *
      * Please check if ptep is valid, and tlb must be manually updated if
@@ -325,9 +335,10 @@ static inline void page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
 // page_remove - free an Page which is related linear address la and has an
 // validated pte
 void page_remove(pde_t *pgdir, uintptr_t la) {
-    pte_t *ptep = get_pte(pgdir, la, 0);
+    //page_remove()，在页表里删除一个映射
+    pte_t *ptep = get_pte(pgdir, la, 0);//找到页表项所在位置
     if (ptep != NULL) {
-        page_remove_pte(pgdir, la, ptep);
+        page_remove_pte(pgdir, la, ptep);//删除这个页表项的映射
     }
 }
 
@@ -339,22 +350,26 @@ void page_remove(pde_t *pgdir, uintptr_t la) {
 //  perm:  the permission of this Page which is setted in related pte
 // return value: always 0
 // note: PT is changed, so the TLB need to be invalidate
+
 int page_insert(pde_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
+    //page_insert()，在页表里建立一个映射
+    //pgdir是页表基址(satp)，page对应物理页面，la是虚拟地址
     pte_t *ptep = get_pte(pgdir, la, 1);
+    //先找到对应页表项的位置，如果原先不存在，get_pte()会分配页表项的内存
     if (ptep == NULL) {
         return -E_NO_MEM;
     }
-    page_ref_inc(page);
-    if (*ptep & PTE_V) {
+    page_ref_inc(page);//指向这个物理页面的虚拟地址增加了一个
+    if (*ptep & PTE_V) {//原先存在映射
         struct Page *p = pte2page(*ptep);
-        if (p == page) {
+        if (p == page) {//如果这个映射原先就有
             page_ref_dec(page);
-        } else {
+        } else {//如果原先这个虚拟地址映射到其他物理页面，那么需要删除映射
             page_remove_pte(pgdir, la, ptep);
         }
     }
-    *ptep = pte_create(page2ppn(page), PTE_V | perm);
-    tlb_invalidate(pgdir, la);
+    *ptep = pte_create(page2ppn(page), PTE_V | perm);//构造页表项
+    tlb_invalidate(pgdir, la);//页表改变之后要刷新TLB
     return 0;
 }
 
@@ -391,7 +406,10 @@ static void check_alloc_page(void) {
     cprintf("check_alloc_page() succeeded!\n");
 }
 
+//
 static void check_pgdir(void) {
+    //建立映射关系
+    
     // assert(npage <= KMEMSIZE / PGSIZE);
     // The memory starts at 2GB in RISC-V
     // so npage is always larger than KMEMSIZE / PGSIZE
@@ -399,18 +417,21 @@ static void check_pgdir(void) {
 
     nr_free_store=nr_free_pages();
 
+    //boot_pgdir是页表的虚拟地址
     assert(npage <= KERNTOP / PGSIZE);
     assert(boot_pgdir != NULL && (uint32_t)PGOFF(boot_pgdir) == 0);
     assert(get_page(boot_pgdir, 0x0, NULL) == NULL);
+    //get_page()尝试找到虚拟内存0x0对应的页，现在没有，返回NULL
 
     struct Page *p1, *p2;
-    p1 = alloc_page();
-    assert(page_insert(boot_pgdir, p1, 0x0, 0) == 0);
+    p1 = alloc_page();//拿过来一个物理页面
+    assert(page_insert(boot_pgdir, p1, 0x0, 0) == 0);//把这个物理页面通过多级页表映射到0x0
     pte_t *ptep;
     assert((ptep = get_pte(boot_pgdir, 0x0, 0)) != NULL);
     assert(pte2page(*ptep) == p1);
     assert(page_ref(p1) == 1);
-
+    //get_pte查找某个虚拟地址对应的页表项，如果不存在这个页表项，会为它分配各级的页表
+    
     ptep = (pte_t *)KADDR(PDE_ADDR(boot_pgdir[0]));
     ptep = (pte_t *)KADDR(PDE_ADDR(ptep[0])) + 1;
     assert(get_pte(boot_pgdir, PGSIZE, 0) == ptep);
@@ -490,22 +511,27 @@ static void check_boot_pgdir(void) {
     cprintf("check_boot_pgdir() succeeded!\n");
 }
 
-void *kmalloc(size_t n) {
+//设置接口来负责分配释放内存，这里我们选择的是malloc / free的接口
+
+//动态的内存分配
+void *kmalloc(size_t n) {//分配至少n个连续的字节，这里实现得不精细，占用的只能是整数个页。
     void *ptr = NULL;
     struct Page *base = NULL;
     assert(n > 0 && n < 1024 * 0124);
-    int num_pages = (n + PGSIZE - 1) / PGSIZE;
+    int num_pages = (n + PGSIZE - 1) / PGSIZE;//向上取整到整数个页
     base = alloc_pages(num_pages);
-    assert(base != NULL);
-    ptr = page2kva(base);
+    assert(base != NULL);//如果分配失败就直接panic
+    ptr = page2kva(base);//分配的内存的起始位置（虚拟地址），
+    //page2kva, 就是page_to_kernel_virtual_address
     return ptr;
 }
 
-void kfree(void *ptr, size_t n) {
+void kfree(void *ptr, size_t n) {//从某个位置开始释放n个字节
     assert(n > 0 && n < 1024 * 0124);
     assert(ptr != NULL);
     struct Page *base = NULL;
     int num_pages = (n + PGSIZE - 1) / PGSIZE;
+    /*计算num_pages和kmalloc里一样*/
     base = kva2page(ptr);
     free_pages(base, num_pages);
 }

@@ -7,11 +7,12 @@
 #include <assert.h>
 
 void
-swapfs_init(void) {
+swapfs_init(void) {//做一些检查
     static_assert((PGSIZE % SECTSIZE) == 0);
     if (!ide_device_valid(SWAP_DEV_NO)) {
         panic("swap fs isn't available.\n");
     }
+    //swap.c/swap.h里的全局变量
     max_swap_offset = ide_device_size(SWAP_DEV_NO) / (PGSIZE / SECTSIZE);
 }
 

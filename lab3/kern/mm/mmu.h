@@ -34,6 +34,9 @@
 // |  PPN[2] | PPN[1] | PPN[0] |Reserved|D|A|G|U|X|W|R|V|
 // +---------+----+---+--------+--------+---------------+
 
+//定义了一些与内存管理单元（Memory Management Unit, MMU）相关的宏和常量，
+//用于操作线性地址和物理地址，以及页表项的字段
+
 // page directory index
 #define PDX1(la) ((((uintptr_t)(la)) >> PDX1SHIFT) & 0x1FF)
 #define PDX0(la) ((((uintptr_t)(la)) >> PDX0SHIFT) & 0x1FF)
@@ -51,6 +54,7 @@
 #define PGADDR(d1, d0, t, o) ((uintptr_t)((d1) << PDX1SHIFT | (d0) << PDX0SHIFT | (t) << PTXSHIFT | (o)))
 
 // address in page table or page directory entry
+// 把页表项里存储的地址拿出来
 #define PTE_ADDR(pte)   (((uintptr_t)(pte) & ~0x3FF) << (PTXSHIFT - PTE_PPN_SHIFT))
 #define PDE_ADDR(pde)   PTE_ADDR(pde)
 

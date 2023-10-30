@@ -406,6 +406,25 @@ do_pgfault(struct mm_struct *mm, uint_t error_code, uintptr_t addr) {
             //map of phy addr <--->
             //logical addr
             //(3) make the page swappable.
+            // (1) 尝试加载正确的磁盘页面的内容到内存中的页面
+            int result = swap_in(mm, addr, &page); // ***在这里进swap_in函数
+            if (result != 0)
+            {
+                cprintf("swap_in failed\n");
+                goto failed;
+            }
+            // (2) 设置物理地址和逻辑地址的映射
+            if (page_insert(mm->pgdir, page, addr, perm) != 0)
+            {
+                cprintf("page_insert failed\n");
+                goto failed;
+            }
+            // (3) 设置页面为可交换的
+            if (swap_map_swappable(mm, addr, page, 1) != 0)
+            {
+                cprintf("swap_map_swappable failed\n");
+                goto failed;
+            }
             page->pra_vaddr = addr;
         } else {
             cprintf("no swap_init_ok but ptep is %x, failed\n", *ptep);

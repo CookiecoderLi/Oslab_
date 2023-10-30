@@ -16,7 +16,7 @@
 
 #define MAX_SWAP_OFFSET_LIMIT                   (1 << 24)
 
-extern size_t max_swap_offset;
+extern size_t max_swap_offset;    //标注
 
 /* *
  * swap_offset - takes a swap_entry (saved in pte), and returns
@@ -30,6 +30,7 @@ extern size_t max_swap_offset;
                __offset;                                            \
           })
 
+//组合页面置换需要的一些函数接口。
 struct swap_manager
 {
      const char *name;

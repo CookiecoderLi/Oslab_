@@ -62,6 +62,10 @@ struct Page *pgdir_alloc_page(pde_t *pgdir, uintptr_t la, uint32_t perm);
  * corresponding physical address.  It panics if you pass it a non-kernel
  * virtual address.
  * */
+
+//KADDR, PADDR进行的是物理地址和虚拟地址的互换
+//由于我们在ucore里实现的页表映射很简单，所有物理地址和虚拟地址的偏移值相同，
+//所以这两个宏本质上只是做了一步加法 / 减法，额外还做了一些合法性检查。
 #define PADDR(kva)                                                 \
     ({                                                             \
         uintptr_t __m_kva = (uintptr_t)(kva);                      \
@@ -90,23 +94,37 @@ extern size_t npage;
 extern const size_t nbase;
 extern uint_t va_pa_offset;
 
+
+/*
+我们曾经在内存里分配了一堆连续的Page结构体，来管理物理页面。可以把它们看作一个结构体数组。
+pages指针是这个数组的起始地址，减一下，加上一个基准值nbase, 就可以得到正确的物理页号。
+pages指针和nbase基准值我们都在其他地方做了正确的初始化
+*/
 static inline ppn_t page2ppn(struct Page *page) { return page - pages + nbase; }
 
+/*
+指向某个Page结构体的指针，对应一个物理页面，也对应一个起始的物理地址。
+左移若干位就可以从物理页号得到页面的起始物理地址。
+*/
 static inline uintptr_t page2pa(struct Page *page) {
     return page2ppn(page) << PGSHIFT;
 }
 
+/*
+倒过来，从物理页面的地址得到所在的物理页面。实际上是得到管理这个物理页面的Page结构体。
+*/
 static inline struct Page *pa2page(uintptr_t pa) {
     if (PPN(pa) >= npage) {
         panic("pa2page called with invalid pa");
     }
-    return &pages[PPN(pa) - nbase];
+    return &pages[PPN(pa) - nbase];//把pages指针当作数组使用
 }
 
 static inline void *page2kva(struct Page *page) { return KADDR(page2pa(page)); }
 
 static inline struct Page *kva2page(void *kva) { return pa2page(PADDR(kva)); }
 
+//从页表项得到对应的页，这里用到了 PTE_ADDR(pte)宏，对页表项做操作，在mmu.h里定义
 static inline struct Page *pte2page(pte_t pte) {
     if (!(pte & PTE_V)) {
         panic("pte2page called with invalid pte");
@@ -114,7 +132,8 @@ static inline struct Page *pte2page(pte_t pte) {
     return pa2page(PTE_ADDR(pte));
 }
 
-static inline struct Page *pde2page(pde_t pde) {
+//PDE(Page Directory Entry)指的是不在叶节点的页表项（指向低一级页表的页表项）
+static inline struct Page *pde2page(pde_t pde) {//PDE_ADDR这个宏和PTE_ADDR是一样的
     return pa2page(PDE_ADDR(pde));
 }
 
@@ -127,7 +146,7 @@ static inline int page_ref_inc(struct Page *page) {
     return page->ref;
 }
 
-static inline int page_ref_dec(struct Page *page) {
+static inline int page_ref_dec(struct Page *page) {//引用计数减一并返回
     page->ref -= 1;
     return page->ref;
 }

@@ -62,7 +62,7 @@ typedef pte_t swap_entry_t; //the pte can also be a swap entry
  * physical page. In kern/mm/pmm.h, you can find lots of useful functions
  * that convert Page to other data types, such as physical address.
  * */
-struct Page {
+struct Page {  //做了改动
     int ref;                        // page frame's reference counter
     uint_t flags;                 // array of flags that describe the status of the page frame
     uint_t visited;
