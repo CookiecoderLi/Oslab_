@@ -41,12 +41,12 @@ swap_init(void)
         max_swap_offset < MAX_SWAP_OFFSET_LIMIT)) {
         panic("bad max_swap_offset %08x.\n", max_swap_offset);
      }
-     //将指针 sm 指向了 swap_manager_clock。
-     //它是一个指向页面置换管理器的指针，以确定哪些页面应该被替换出物理内存。
+     //将指针 sm 指向了 swap_manager_clock
+     //它是一个指向页面置换管理器的指针，以确定哪些页面应该被替换出物理内存
      //即先进先出的页面置换算法
      sm = &swap_manager_clock;//use first in first out Page Replacement Algorithm
 
-     //调用了页面置换管理器的初始化函数。r 变量存储初始化函数的返回值，
+     //调用了页面置换管理器的初始化函数。r 变量存储初始化函数的返回值
      //用于检查初始化是否成功
      int r = sm->init();
      
@@ -176,7 +176,7 @@ check_content_set(void)
 }
 
 static inline int
-check_content_access(void)
+check_content_access(void)//调用不同页面置换算法的check函数检查算法
 {
     int ret = sm->check_swap();
     return ret;
@@ -217,10 +217,11 @@ check_swap(void)
      pde_t *pgdir = mm->pgdir = boot_pgdir;
      assert(pgdir[0] == 0);
 
+     //* vma的创建并初始化，根据参数`vm_start`、`vm_end`、`vm_flags`完成初始化
      struct vma_struct *vma = vma_create(BEING_CHECK_VALID_VADDR, CHECK_VALID_VADDR, VM_WRITE | VM_READ);
      assert(vma != NULL);
 
-     insert_vma_struct(mm, vma);
+     insert_vma_struct(mm, vma);//向mm的mmap_list的插入一个vma，按地址插入合适位置
 
      //setup the temp Page Table vaddr 0~4MB
      cprintf("setup Page Table for vaddr 0X1000, so alloc a page\n");
@@ -253,7 +254,7 @@ check_swap(void)
      
      pgfault_num=0;
      
-     check_content_set();
+     check_content_set();//初步检查页面交换函数，进行一些基本的访存和缺页处理
      assert( nr_free == 0);         
      for(i = 0; i<MAX_SEQ_NO ; i++) 
          swap_out_seq_no[i]=swap_in_seq_no[i]=-1;
@@ -268,7 +269,7 @@ check_swap(void)
      }
      cprintf("set up init env for check_swap over!\n");
      // now access the virt pages to test  page relpacement algorithm 
-     ret=check_content_access();
+     ret=check_content_access();   //进入
      assert(ret==0);
      
      //restore kernel mem env

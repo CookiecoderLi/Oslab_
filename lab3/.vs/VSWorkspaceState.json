@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\kern",
+    "\\kern\\driver",
+    "\\kern\\fs",
+    "\\kern\\init",
+    "\\kern\\mm",
+    "\\kern\\sync",
+    "\\kern\\trap"
+  ],
+  "SelectedNode": "\\kern\\mm\\swap_clock.c",
+  "PreviewInSolutionExplorer": false
+}

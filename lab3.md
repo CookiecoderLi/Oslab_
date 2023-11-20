@@ -4,7 +4,7 @@
 
 #### 理解代码的执行流
 
-**主执行流：**init--->swap_init--->check_swap--->check_content_access--->sm->check_swap()--->发生缺页异常--->trap()--->exception_handler--->pgfault_handler--->do_pgfault--->swap_in、page_insert、swap_map_swappable
+**主执行流：** init--->swap_init--->check_swap--->check_content_access--->sm->check_swap()--->发生缺页异常--->trap()--->exception_handler--->pgfault_handler--->do_pgfault--->swap_in、page_insert、swap_map_swappable
 
 **swap_in分支**：swap_in->alloc_page--->alloc_pages--->swap_out--->sm->swap_out_victim
 
@@ -19,7 +19,7 @@
 其中涉及`swapfs_init`、`sm->init`等函数
 
 1. `swapfs_init`函数：使用`static_assert`宏检查页面大小是否是扇区大小的整数倍，如果不是，则会在编译时引发错误。接着，该函数调用`ide_device_valid`函数检查磁盘交换分区是否可用，如果不可用，则输出错误信息并引发紧急情况。最后，该函数计算最大交换偏移量，即磁盘交换分区的大小除以页面大小，以便在后续的页面置换算法中使用
-2. `sm->init`函数：调用所选内存置换算法的init函数，现在选择的是上面提及的**_fifo_init_mm(struct mm_struct *mm)**
+2. `sm->init`函数：调用所选内存置换算法的init函数，现在选择的是上面提及的** _fifo_init_mm(struct mm_struct *mm)**
 
 #### 2、check_swap函数
 
@@ -30,18 +30,8 @@
 1. `vma_create`函数：vma的创建并初始化，根据参数`vm_start`、`vm_end`、`vm_flags`完成初始化
 2. `insert_vma_struct`函数：向mm的mmap_list的插入一个vma，按地址插入合适位置
 3. `check_content_set`函数：初步检查页面交换函数，进行一些基本的访存和缺页处理
-
-```c
-check_content_set(void){     *(unsigned char *)0x1000 = 0x0a; // 冷启动，miss
-     assert(pgfault_num == 1);     *(unsigned char *)0x1010 = 0x0a; // hit
-     assert(pgfault_num == 1);     *(unsigned char *)0x2000 = 0x0b; // 冷启动，miss
-     assert(pgfault_num == 2);     *(unsigned char *)0x2010 = 0x0b; // 对齐，hit
-     assert(pgfault_num == 2);     *(unsigned char *)0x3000 = 0x0c; // 冷启动，miss
-     assert(pgfault_num == 3);     *(unsigned char *)0x3010 = 0x0c; // 对齐，hit
-     assert(pgfault_num == 3);     *(unsigned char *)0x4000 = 0x0d; // 冷启动，miss
-     assert(pgfault_num == 4);     *(unsigned char *)0x4010 = 0x0d; // 对齐，hit
-     assert(pgfault_num == 4);}
-```
+   
+   
 
 #### 3、check_content_access函数
 
@@ -235,5 +225,3 @@ RISC-V的分页机制为多级页表，sv32、sv39和sv48三种分页模式分�
 1. **内部碎片**：如果一个大页没有被充分利用，它可能会导致内存中的内部碎片，因为操作系统需要为整个大页分配内存，即使只使用了其中的一部分。
 
 2. **不适用于所有应用**：某些应用程序可能不适合大页，因为它们的内存访问模式无法受益于大页的优势。
-
-
