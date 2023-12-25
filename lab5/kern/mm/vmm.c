@@ -156,6 +156,7 @@ mm_destroy(struct mm_struct *mm) {
     mm=NULL;
 }
 
+//创建vma并插入到mm的链表中
 int
 mm_map(struct mm_struct *mm, uintptr_t addr, size_t len, uint32_t vm_flags,
        struct vma_struct **vma_store) {
@@ -187,6 +188,7 @@ out:
     return ret;
 }
 
+//对所有oldmm中的vma遍历，复制新的vma到newmm中，同时对每个vma中的地址(以页为单位)进行内容复制
 int
 dup_mmap(struct mm_struct *to, struct mm_struct *from) {
     assert(to != NULL && from != NULL);
@@ -216,10 +218,12 @@ exit_mmap(struct mm_struct *mm) {
     list_entry_t *list = &(mm->mmap_list), *le = list;
     while ((le = list_next(le)) != list) {
         struct vma_struct *vma = le2vma(le, list_link);
+        //删除vma的范围内分配的页表项，并释放这些页表项对应的物理页，只包括最低级的页表项
         unmap_range(pgdir, vma->vm_start, vma->vm_end);
     }
     while ((le = list_next(le)) != list) {
         struct vma_struct *vma = le2vma(le, list_link);
+        //释放对应的pde0和pde1
         exit_range(pgdir, vma->vm_start, vma->vm_end);
     }
 }
@@ -453,11 +457,14 @@ do_pgfault(struct mm_struct *mm, uint_t error_code, uintptr_t addr) {
             //(1）According to the mm AND addr, try
             //to load the content of right disk page
             //into the memory which page managed.
+            swap_in(mm,addr,&page);
             //(2) According to the mm,
             //addr AND page, setup the
             //map of phy addr <--->
             //logical addr
+            page_insert(mm->pgdir,page,addr,perm);
             //(3) make the page swappable.
+            swap_map_swappable(mm,addr,page,1);
             page->pra_vaddr = addr;
         } else {
             cprintf("no swap_init_ok but ptep is %x, failed\n", *ptep);
@@ -469,8 +476,10 @@ failed:
     return ret;
 }
 
+//搜索 vma 链表，检查是否是一个合法的用户空间范围
 bool
 user_mem_check(struct mm_struct *mm, uintptr_t addr, size_t len, bool write) {
+//在内核空间内，将mm初始化了NULL，检查是对于用户空间
     if (mm != NULL) {
         if (!USER_ACCESS(addr, addr + len)) {
             return 0;

@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\kern",
+    "\\kern\\fs",
+    "\\kern\\init",
+    "\\kern\\process",
+    "\\kern\\schedule",
+    "\\kern\\trap",
+    "\\out"
+  ],
+  "SelectedNode": "\\kern\\process\\proc.c",
+  "PreviewInSolutionExplorer": false
+}

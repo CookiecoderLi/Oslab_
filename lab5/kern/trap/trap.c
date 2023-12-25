@@ -192,6 +192,7 @@ void exception_handler(struct trapframe *tf) {
             if(tf->gpr.a7 == 10){
                 tf->epc += 4;
                 syscall();
+                //保存信息到该线程对应的栈空间中
                 kernel_execve_ret(tf,current->kstack+KSTACKSIZE);
             }
             break;

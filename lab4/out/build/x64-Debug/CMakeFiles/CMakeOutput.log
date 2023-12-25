@@ -1,0 +1,33 @@
+The system is: Windows - 10.0.22000 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: E:/vs2022/VC/Tools/MSVC/14.31.31103/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+用于 x64 的 Microsoft (R) C/C++ 优化编译器 19.31.31104 版
+版权所有(C) Microsoft Corporation。保留所有权利。
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.31.31104.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/lixiang/Desktop/labcode/git_/lab4/out/build/x64-Debug/CMakeFiles/3.22.22022201-MSVC_2/CompilerIdC/CMakeCCompilerId.exe"
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/lixiang/Desktop/labcode/git_/lab4/out/build/x64-Debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):E:\VS2022\COMMON7\IDE\COMMONEXTENSIONS\MICROSOFT\CMAKE\Ninja\ninja.exe cmTC_eeb17 && [1/2] Building C object CMakeFiles\cmTC_eeb17.dir\CMakeCCompilerABI.c.obj
+[2/2] Linking C executable cmTC_eeb17.exe
+
+
+

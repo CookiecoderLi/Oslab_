@@ -32,7 +32,7 @@ struct proghdr {
     uint64_t p_va;     // virtual address to map segment
     uint64_t p_pa;     // physical address, not used
     uint64_t p_filesz; // size of segment in file
-    uint64_t p_memsz;  // size of segment in memory (bigger if contains bss）
+    uint64_t p_memsz;  // size of segment in memory (bigger than p_filesz if contains bss）
     uint64_t p_align;  // required alignment, invariably hardware page size
 };
 

@@ -90,6 +90,7 @@ syscall(void) {
             arg[2] = tf->gpr.a3;
             arg[3] = tf->gpr.a4;
             arg[4] = tf->gpr.a5;
+            //调用对应的系统调用函数，传入参数
             tf->gpr.a0 = syscalls[num](arg);
             return ;
         }

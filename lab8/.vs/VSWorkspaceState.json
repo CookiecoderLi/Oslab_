@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\disk0",
+    "\\kern",
+    "\\kern\\fs",
+    "\\kern\\fs\\sfs",
+    "\\kern\\fs\\swap"
+  ],
+  "SelectedNode": "\\kern\\fs\\sfs\\sfs_inode.c",
+  "PreviewInSolutionExplorer": false
+}

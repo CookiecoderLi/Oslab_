@@ -268,11 +268,13 @@ static inline void page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
 }
 
 void unmap_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
+    //检查start和end是否是PGSIZE的整数倍(按页分配内存)
     assert(start % PGSIZE == 0 && end % PGSIZE == 0);
     assert(USER_ACCESS(start, end));
-
+    //从start开始一直到end，释放所有的页表项
     do {
         pte_t *ptep = get_pte(pgdir, start, 0);
+        //如果页表项不存在，说明在此之后的同一页目录项内都为分配对应的页表，直接从下一个页目录项开始
         if (ptep == NULL) {
             start = ROUNDDOWN(start + PTSIZE, PTSIZE);
             continue;
@@ -291,6 +293,7 @@ void exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
     uintptr_t d1start, d0start;
     int free_pt, free_pd0;
     pde_t *pd0, *pt, pde1, pde0;
+    //找到start对应的pde0和pde1
     d1start = ROUNDDOWN(start, PDSIZE);
     d0start = ROUNDDOWN(start, PTSIZE);
     do {
@@ -310,7 +313,9 @@ void exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
                 if (pde0&PTE_V) {
                     pt = page2kva(pde2page(pde0));
                     // try to free page table
+                    //尝试释放pde0对应的页，页中包含了pte
                     free_pt = 1;
+                    //遍历pt,如果有一个pte有效，就不能释放这个pde0对应的页
                     for (int i = 0;i <NPTEENTRY;i++)
                         if (pt[i]&PTE_V){
                             free_pt = 0;
@@ -319,14 +324,17 @@ void exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
                     // free it only when all entry are already invalid
                     if (free_pt) {
                         free_page(pde2page(pde0));
+                        //释放完pde0对应的页后，将pde0对应的内容置为0
                         pd0[PDX0(d0start)] = 0;
                     }
                 } else
                     free_pd0 = 0;
                 d0start += PTSIZE;
             } while (d0start != 0 && d0start < d1start+PDSIZE && d0start < end);
+            //接下来尝试释放pde1所指向的页，页中包含了pde0
             // free level 0 page directory only when all pde0s in it are already invalid
             if (free_pd0) {
+            //同样的处理
                 free_page(pde2page(pde1));
                 pgdir[PDX1(d1start)] = 0;
             }
@@ -357,7 +365,7 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
             continue;
         }
         // call get_pte to find process B's pte according to the addr start. If
-        // pte is NULL, just alloc a PT
+        // pte is NULL, just alloc a PT.
         if (*ptep & PTE_V) {
             if ((nptep = get_pte(to, start, 1)) == NULL) {
                 return -E_NO_MEM;
@@ -388,8 +396,11 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
              * (3) memory copy from src_kvaddr to dst_kvaddr, size is PGSIZE
              * (4) build the map of phy addr of  nage with the linear addr start
              */
-
-
+            memcpy(page2kva(npage), page2kva(page), PGSIZE);
+            if ((ret = page_insert(to, npage, start, perm)) != 0) {
+                return ret;
+            }
+            
             assert(ret == 0);
         }
         start += PGSIZE;

@@ -7,6 +7,7 @@ int
 main(void) {
     int n, pid;
     for (n = 0; n < max_child; n ++) {
+    //子线程的返回值为0，实现在copy_thread函数中
         if ((pid = fork()) == 0) {
             cprintf("I am child %d\n", n);
             exit(0);

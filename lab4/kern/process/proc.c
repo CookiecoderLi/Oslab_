@@ -203,7 +203,8 @@ proc_run(struct proc_struct* proc) {
         //change the page table to the new page table将页表换成新进程的页表
         //将当前的cr3寄存器改为需要运行进程的页目录表
         lcr3(next->cr3);
-        //use switch_to to new process使用switch_to切换到新进程
+        //use switch_to to new process使用sw
+        // itch_to切换到新进程
         //进行上下文切换，保存原线程的寄存器并恢复待调度线程的寄存器
         switch_to(&(prev->context), &(next->context));
         local_intr_restore(intr_flag);
@@ -258,7 +259,7 @@ kernel_thread(int (*fn)(void*), void* arg, uint32_t clone_flags) {
     // 设置 trapframe 中的 status 寄存器（SSTATUS）
     // SSTATUS_SPP：Supervisor Previous Privilege（设置为 supervisor 模式，因为这是一个内核线程）
     // SSTATUS_SPIE：Supervisor Previous Interrupt Enable（设置为启用中断，因为这是一个内核线程）
-    // SSTATUS_SIE：Supervisor Interrupt Enable（设置为禁用中断，因为我们不希望该线程被中断）
+    // SSTATUS_SIE：Supervisor Interrupt Enable（设置为禁用中断，因为我们不希望该线程被中断）全局
     // 设置SPP和SPIE位，并同时清除SIE位，从而实现特权级别切换、保留中断使能状态并禁用中断的操作
     tf.status = (read_csr(sstatus) | SSTATUS_SPP | SSTATUS_SPIE) & ~SSTATUS_SIE;
 
@@ -297,6 +298,8 @@ copy_mm(uint32_t clone_flags, struct proc_struct* proc) {
 
 // copy_thread - setup the trapframe on the  process's kernel stack top and
 //             - setup the kernel entry point and stack of process
+//在进程的内核堆栈顶部设置trapframe，有关于中断的信息
+//-设置内核入口点和进程堆栈
 static void
 copy_thread(struct proc_struct* proc, uintptr_t esp, struct trapframe* tf) {
     //在上面分配的内核栈上分配出一片空间来保存trapframe

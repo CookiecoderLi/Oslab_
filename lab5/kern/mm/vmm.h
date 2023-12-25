@@ -84,14 +84,14 @@ mm_count_dec(struct mm_struct *mm) {
     mm->mm_count -= 1;
     return mm->mm_count;
 }
-
+//mm里有一个mm_lock,若该位为0，则表示没有被锁住，加锁后返回，若该位为1，则表示该mm被锁住，调度其它线程执行，等待该位为0
 static inline void
 lock_mm(struct mm_struct *mm) {
     if (mm != NULL) {
         lock(&(mm->mm_lock));
     }
 }
-
+//释放锁
 static inline void
 unlock_mm(struct mm_struct *mm) {
     if (mm != NULL) {

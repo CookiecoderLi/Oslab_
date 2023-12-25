@@ -43,6 +43,7 @@ schedule(void) {
             next = idleproc;
         }
         next->runs ++;
+        //调度的进程不能为当前进程
         if (next != current) {
             proc_run(next);
         }
